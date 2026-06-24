@@ -1,0 +1,67 @@
+{
+  "menu": [
+    {
+      "url": "/central/central-admin-dashboard",
+      "name": "Dashboard",
+      "icon": "menu-icon icon-base ti tabler-smart-home",
+      "slug": "central-admin-dashboard"
+    },
+    {
+      "name": "Admin Management",
+      "icon": "menu-icon icon-base ti tabler-users",
+      "slug": ["create-administrators", "central-role-permissions"],
+      "submenu": [
+        {
+          "url": "/central/create-administrators",
+          "name": "Administrators",
+          "slug": "create-administrators"
+        },
+        {
+          "url": "/central/roles-permissions",
+          "name": "Roles & Permissions",
+          "slug": "central-role-permissions"
+        }
+      ]
+    },
+    {
+      "name": "Facilities Management",
+      "icon": "menu-icon icon-base ti tabler-building-hospital",
+      "slug": ["create-facility", "central-facility-module-management"],
+      "submenu": [
+        {
+          "url": "/central/create-facility",
+          "name": "Manage Facilities",
+          "slug": "create-facility"
+        },
+        {
+          "url": "/central/facility-module-management",
+          "name": "Facility Module Access",
+          "slug": "central-facility-module-management"
+        }
+      ]
+    },
+    {
+      "name": "Governance",
+      "icon": "menu-icon icon-base ti tabler-shield-check",
+      "slug": ["central-audit-trail", "central-platform-notifications"],
+      "submenu": [
+        {
+          "url": "/central/audit-trail",
+          "name": "Audit Trail",
+          "slug": "central-audit-trail"
+        },
+        {
+          "url": "/central/platform-notifications",
+          "name": "Platform Notifications",
+          "slug": "central-platform-notifications"
+        }
+      ]
+    },
+    {
+      "url": "/account/settings",
+      "name": "Account Settings",
+      "icon": "menu-icon icon-base ti tabler-user-cog",
+      "slug": "account-settings"
+    }
+  ]
+}
