@@ -8,6 +8,7 @@ use App\Models\AntenatalFollowUpAssessment;
 use App\Models\DoctorAssessment;
 use App\Models\FamilyPlanningFollowUp;
 use App\Models\Registrations\FamilyPlanningRegistration;
+use App\Models\Registrations\ImmunizationRegistration;
 use App\Models\Registrations\DinActivation;
 use App\Models\TetanusVaccination;
 use Livewire\Component;
@@ -64,8 +65,10 @@ class WorkspaceDashboard extends Component
   // ============================================
   public $hasAntenatalRegistration = false;
   public $hasFamilyPlanningRegistration = false;
+  public $hasImmunizationRegistration = false;
   public $antenatalRegistrationId = null;
   public $familyPlanningRegistrationId = null;
+  public $immunizationRegistrationId = null;
 
   // ============================================
   // LINKED CHILDREN
@@ -192,6 +195,19 @@ class WorkspaceDashboard extends Component
     } catch (\Exception $e) {
       $this->hasFamilyPlanningRegistration = false;
       $this->familyPlanningRegistrationId = null;
+    }
+
+    try {
+      $immReg = ImmunizationRegistration::query()
+        ->where('patient_id', $this->patientId)
+        ->latest('registration_date')
+        ->latest('id')
+        ->first();
+      $this->hasImmunizationRegistration = !is_null($immReg);
+      $this->immunizationRegistrationId = $immReg?->id;
+    } catch (\Exception $e) {
+      $this->hasImmunizationRegistration = false;
+      $this->immunizationRegistrationId = null;
     }
   }
 

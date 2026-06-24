@@ -10,6 +10,7 @@ use App\Models\Patient;
 use App\Models\Facility;
 use Livewire\Component;
 use App\Models\Registrations\AntenatalRegistration;
+use App\Services\Patients\PatientPortalAccountService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -152,7 +153,7 @@ class AntenatalRegister extends Component
       'occupation' => 'nullable|string|max:255',
       'ethnic_group' => 'nullable|string|max:255',
       'genotype' => 'nullable|in:AA,AS,SS,AC,SC,CC',
-      'blood_group_rhesus' => 'nullable|string|max:10',
+      'blood_group_rhesus' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
     ];
 
     // If creating new patient (no patient_id), add patient validation
@@ -213,25 +214,52 @@ class AntenatalRegister extends Component
       'gravida.min' => 'Gravida must be at least 1',
       'parity.required' => 'Parity is required',
       'parity.min' => 'Parity must be at least 0',
+      'blood_group_rhesus.in' => 'Blood Group/Rh must be one of A+, A-, B+, B-, AB+, AB-, O+, or O-.',
     ];
+  }
+
+  private function normalizeBloodGroupRhesus(): void
+  {
+    if ($this->blood_group_rhesus === null) {
+      return;
+    }
+
+    $normalized = strtoupper(trim($this->blood_group_rhesus));
+
+    if ($normalized === '') {
+      $this->blood_group_rhesus = null;
+      return;
+    }
+
+    // Accept the common "0+" / "0-" typo and normalize it to the valid enum.
+    if (str_starts_with($normalized, '0')) {
+      $normalized = 'O' . substr($normalized, 1);
+    }
+
+    $this->blood_group_rhesus = $normalized;
   }
 
   public function mount()
   {
     $user = Auth::user();
+    if (!$user || $user->role !== 'Data Officer') {
+      abort(403, 'Unauthorized: Only Data Officers can access this page.');
+    }
+
     $this->facility_id = $user->facility_id;
     $this->officer_name = $user->full_name ?? ($user->first_name . ' ' . $user->last_name);
     $this->officer_role = $user->role ?? $user->designation ?? 'Staff';
     $this->officer_designation = $user->designation ?? 'N/A';
 
-    if ($this->facility_id) {
-      $facility = Facility::with(['stateRelation', 'lgaRelation'])->find($this->facility_id);
-
-      $this->facility_name = $facility?->name ?? 'Unknown Facility';
-      $this->facility_state = $facility?->stateRelation?->name ?? 'N/A';
-      $this->facility_lga = $facility?->lgaRelation?->name ?? 'N/A';
-      $this->facility_ward = $facility?->ward ?? 'N/A';
+    $facility = Facility::with(['stateRelation', 'lgaRelation'])->find($this->facility_id);
+    if (!$facility) {
+      abort(403, 'Invalid facility assignment.');
     }
+
+    $this->facility_name = $facility->name;
+    $this->facility_state = $facility->stateRelation?->name ?? 'N/A';
+    $this->facility_lga = $facility->lgaRelation?->name ?? 'N/A';
+    $this->facility_ward = $facility->ward ?? 'N/A';
 
     // Load states, lgas, wards for new patient registration
     $this->states = State::orderBy('name')->get();
@@ -462,6 +490,12 @@ class AntenatalRegister extends Component
     }
   }
 
+  public function updatedBloodGroupRhesus($value)
+  {
+    $this->blood_group_rhesus = $value;
+    $this->normalizeBloodGroupRhesus();
+  }
+
   /**
    * Calculate Expected Delivery Date (Naegele's Rule: LMP + 280 days)
    */
@@ -506,6 +540,14 @@ class AntenatalRegister extends Component
   {
     DB::beginTransaction();
     try {
+      if (!$this->facility_id) {
+        throw ValidationException::withMessages([
+          'facility_id' => 'Your account is not assigned to a valid facility. Please contact an administrator.',
+        ]);
+      }
+
+      $this->normalizeBloodGroupRhesus();
+
       // Validate form first - errors will show inline
       $this->validate();
 
@@ -553,7 +595,11 @@ class AntenatalRegister extends Component
         $patient = Patient::create($patientData);
         $this->patient_id = $patient->id;
         $this->pregnancy_number = 1; // First pregnancy for new patient
+      } else {
+        $patient = Patient::findOrFail($this->patient_id);
       }
+
+      app(PatientPortalAccountService::class)->ensureForPatient($patient);
 
       if (AntenatalRegistration::where('patient_id', $this->patient_id)->exists()) {
         throw ValidationException::withMessages([
@@ -682,6 +728,8 @@ class AntenatalRegister extends Component
   {
     DB::beginTransaction();
     try {
+      $this->normalizeBloodGroupRhesus();
+
       $this->validate();
 
       $registration = AntenatalRegistration::where('facility_id', $this->facility_id)

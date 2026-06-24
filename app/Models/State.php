@@ -9,7 +9,17 @@ class State extends Model
 {
   protected $fillable = [
     'name',
+    'is_current',
   ];
+
+  protected $casts = [
+    'is_current' => 'boolean',
+  ];
+
+  public function scopeCurrent($query)
+  {
+    return $query->where('is_current', true);
+  }
 
   /**
    * Get all LGAs in this state

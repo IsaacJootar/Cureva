@@ -11,11 +11,18 @@ class Lga extends Model
   protected $fillable = [
     'state_id',
     'name',
+    'is_current',
   ];
 
   protected $casts = [
     'state_id' => 'integer',
+    'is_current' => 'boolean',
   ];
+
+  public function scopeCurrent($query)
+  {
+    return $query->where('is_current', true);
+  }
 
   /**
    * Get the state this LGA belongs to

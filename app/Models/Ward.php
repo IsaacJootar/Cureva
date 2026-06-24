@@ -11,11 +11,18 @@ class Ward extends Model
   protected $fillable = [
     'lga_id',
     'name',
+    'is_current',
   ];
 
   protected $casts = [
     'lga_id' => 'integer',
+    'is_current' => 'boolean',
   ];
+
+  public function scopeCurrent($query)
+  {
+    return $query->where('is_current', true);
+  }
 
   /**
    * Get the LGA this ward belongs to

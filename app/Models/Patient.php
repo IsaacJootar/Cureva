@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Registrations\AntenatalRegistration;
 use App\Models\Registrations\FamilyPlanningRegistration;
 use App\Models\Registrations\GeneralPatientsRegistration;
+use App\Models\Registrations\ImmunizationRegistration;
 use App\Models\AntenatalFollowUpAssessment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -155,6 +156,14 @@ class Patient extends Model
     return $this->belongsTo(Facility::class);
   }
 
+  /**
+   * Patient portal account linked to this clinical patient record.
+   */
+  public function portalAccount(): HasOne
+  {
+    return $this->hasOne(User::class);
+  }
+
   public function state(): BelongsTo
   {
     return $this->belongsTo(State::class);
@@ -239,6 +248,11 @@ class Patient extends Model
   public function familyPlanningRegistration(): HasOne
   {
     return $this->hasOne(FamilyPlanningRegistration::class);
+  }
+
+  public function immunizationRegistration(): HasOne
+  {
+    return $this->hasOne(ImmunizationRegistration::class);
   }
 
   public function familyPlanningFollowUps(): HasMany
@@ -412,6 +426,7 @@ class Patient extends Model
     if ($this->hasGeneralRegistration()) $entryPoints[] = 'OPD';
     if ($this->hasAntenatalRegistration()) $entryPoints[] = 'ANC';
     if ($this->hasFamilyPlanningRegistration()) $entryPoints[] = 'FP';
+    if ($this->hasImmunizationRegistration()) $entryPoints[] = 'IMM';
 
     return $entryPoints;
   }
@@ -462,6 +477,11 @@ class Patient extends Model
   public function hasFamilyPlanningRegistration(): bool
   {
     return $this->familyPlanningRegistration()->exists();
+  }
+
+  public function hasImmunizationRegistration(): bool
+  {
+    return $this->immunizationRegistration()->exists();
   }
 
   public function hasActivePregnancy(): bool
